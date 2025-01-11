@@ -1,19 +1,13 @@
 package frc.robot.subsystems.drive;
 
-import static edu.wpi.first.units.Units.*;
-
-import java.util.Objects;
-import java.util.function.Supplier;
-
+import choreo.Choreo.TrajectoryLogger;
+import choreo.auto.AutoFactory;
+import choreo.trajectory.SwerveSample;
 import com.ctre.phoenix6.SignalLogger;
 import com.ctre.phoenix6.Utils;
 import com.ctre.phoenix6.swerve.SwerveDrivetrainConstants;
 import com.ctre.phoenix6.swerve.SwerveModuleConstants;
 import com.ctre.phoenix6.swerve.SwerveRequest;
-
-import choreo.Choreo.TrajectoryLogger;
-import choreo.auto.AutoFactory;
-import choreo.trajectory.SwerveSample;
 import com.pathplanner.lib.auto.AutoBuilder;
 import com.pathplanner.lib.config.PIDConstants;
 import com.pathplanner.lib.config.RobotConfig;
@@ -21,6 +15,7 @@ import com.pathplanner.lib.controllers.PPHolonomicDriveController;
 import edu.wpi.first.math.Matrix;
 import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.math.numbers.N1;
 import edu.wpi.first.math.numbers.N3;
 import edu.wpi.first.wpilibj.DriverStation;
@@ -30,7 +25,16 @@ import edu.wpi.first.wpilibj.RobotController;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Subsystem;
 import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine;
+import frc.robot.commands.AutoRoutines;
+import frc.robot.constants.Controls;
+import frc.robot.subsystems.drive.constants.DriveConstants;
 import frc.robot.subsystems.drive.constants.TunerConstants;
+
+import java.util.Objects;
+import java.util.function.Supplier;
+
+import static edu.wpi.first.units.Units.Second;
+import static edu.wpi.first.units.Units.Volts;
 
 public class CommandSwerveDrivetrain extends TunerConstants.TunerSwerveDrivetrain implements Subsystem {
     private static CommandSwerveDrivetrain instance;
@@ -109,6 +113,7 @@ public class CommandSwerveDrivetrain extends TunerConstants.TunerSwerveDrivetrai
     private final SysIdRoutine sysIdRoutineToApply = sysIdRoutineTranslation;
 
     private final AutoFactory autoFactory;
+    private final AutoRoutines autoRoutines;
 
     public static CommandSwerveDrivetrain getInstance() {
         return instance = Objects.requireNonNullElseGet(instance, TunerConstants::createDrivetrain);
@@ -133,6 +138,8 @@ public class CommandSwerveDrivetrain extends TunerConstants.TunerSwerveDrivetrai
             startSimThread();
         }
         autoFactory = createAutoFactory();
+        autoRoutines = new AutoRoutines(autoFactory);
+        configureAutoBuilder();
     }
 
     /**
@@ -158,6 +165,8 @@ public class CommandSwerveDrivetrain extends TunerConstants.TunerSwerveDrivetrai
             startSimThread();
         }
         autoFactory = createAutoFactory();
+        autoRoutines = new AutoRoutines(autoFactory);
+        configureAutoBuilder();
     }
 
     /**
@@ -191,6 +200,8 @@ public class CommandSwerveDrivetrain extends TunerConstants.TunerSwerveDrivetrai
             startSimThread();
         }
         autoFactory = createAutoFactory();
+        autoRoutines = new AutoRoutines(autoFactory);
+        configureAutoBuilder();
     }
 
     /**
@@ -214,10 +225,24 @@ public class CommandSwerveDrivetrain extends TunerConstants.TunerSwerveDrivetrai
                 () -> getState().Pose,
                 this::resetPose,
                 this::followPath,
-                true,
+                false,
                 this,
                 trajLogger
         );
+    }
+
+    public SwerveRequest fieldCentricRequestSupplier() {
+        double forwards = Controls.Driver.SwerveForwardAxis.getAsDouble() * DriveConstants.CURRENT_MAX_ROBOT_MPS;
+        double strafe = Controls.Driver.SwerveStrafeAxis.getAsDouble() * DriveConstants.CURRENT_MAX_ROBOT_MPS;
+        double rotation = Controls.Driver.SwerveRotationAxis.getAsDouble() * DriveConstants.CURRENT_MAX_ROBOT_MPS;
+        return fieldSpeedsRequest.withDesaturateWheelSpeeds(true)
+                .withSpeeds(
+                        new ChassisSpeeds(
+                                forwards,
+                                strafe,
+                                rotation
+                        )
+                );
     }
 
     /**
@@ -340,5 +365,9 @@ public class CommandSwerveDrivetrain extends TunerConstants.TunerSwerveDrivetrai
 
     public AutoFactory getAutoFactory() {
         return autoFactory;
+    }
+
+    public AutoRoutines getAutoRoutines() {
+        return autoRoutines;
     }
 }
