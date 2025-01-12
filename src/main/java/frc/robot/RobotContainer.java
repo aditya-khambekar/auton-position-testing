@@ -7,16 +7,18 @@ package frc.robot;
 
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
+import frc.lib.oi.OI;
+import frc.robot.subsystems.climber.ClimberSubsystem;
 import frc.robot.subsystems.drive.CommandSwerveDrivetrain;
 
 
 public class RobotContainer {
+    private final OI oi = OI.getInstance();
     private final CommandSwerveDrivetrain swerve = CommandSwerveDrivetrain.getInstance();
 
     public RobotContainer() {
         configureBindings();
     }
-
 
     private void configureBindings() {
         swerve.setDefaultCommand(
@@ -25,7 +27,6 @@ public class RobotContainer {
                 )
         );
     }
-
 
     public Command getAutonomousCommand() {
         return Commands.print("No autonomous command configured");

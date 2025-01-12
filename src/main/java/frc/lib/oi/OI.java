@@ -2,6 +2,7 @@ package frc.lib.oi;
 
 import java.util.Objects;
 
+@SuppressWarnings("unused")
 public class OI {
     private static volatile OI instance;
 
@@ -13,7 +14,7 @@ public class OI {
     private final Controller driverController;
     private final Controller operatorController;
 
-    public OI() {
+    private OI() {
         driverController = new Controller(0);
         operatorController = new Controller(1);
     }
