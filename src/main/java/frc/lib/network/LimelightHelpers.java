@@ -20,6 +20,7 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.concurrent.CompletableFuture;
 
+@SuppressWarnings({"ALL", "deprecation"})
 public class LimelightHelpers {
     /**
      * Print JSON Parse time to the console in milliseconds

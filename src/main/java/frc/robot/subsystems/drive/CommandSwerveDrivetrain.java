@@ -12,14 +12,20 @@ import com.pathplanner.lib.auto.AutoBuilder;
 import com.pathplanner.lib.config.PIDConstants;
 import com.pathplanner.lib.config.RobotConfig;
 import com.pathplanner.lib.controllers.PPHolonomicDriveController;
+import com.pathplanner.lib.util.PathPlannerLogging;
+
 import edu.wpi.first.math.Matrix;
 import edu.wpi.first.math.controller.PIDController;
+import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.math.numbers.N1;
 import edu.wpi.first.math.numbers.N3;
+import edu.wpi.first.math.trajectory.Trajectory;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.DriverStation.Alliance;
+import edu.wpi.first.wpilibj.smartdashboard.Field2d;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj.Notifier;
 import edu.wpi.first.wpilibj.RobotController;
 import edu.wpi.first.wpilibj2.command.Command;
@@ -30,6 +36,7 @@ import frc.robot.constants.Controls;
 import frc.robot.subsystems.drive.constants.DriveConstants;
 import frc.robot.subsystems.drive.constants.TunerConstants;
 
+import java.util.ArrayList;
 import java.util.Objects;
 import java.util.function.Supplier;
 
@@ -56,6 +63,9 @@ public class CommandSwerveDrivetrain extends TunerConstants.TunerSwerveDrivetrai
     private final PIDController pathXController = new PIDController(10, 0, 0);
     private final PIDController pathYController = new PIDController(10, 0, 0);
     private final PIDController pathThetaController = new PIDController(7, 0, 0);
+
+    private final Field2d field = new Field2d();
+
 
 
     private final SwerveRequest.SysIdSwerveTranslation m_translationCharacterization = new SwerveRequest.SysIdSwerveTranslation();
@@ -323,6 +333,8 @@ public class CommandSwerveDrivetrain extends TunerConstants.TunerSwerveDrivetrai
                 hasAppliedOperatorPerspective = true;
             });
         }
+        field.setRobotPose(getState().Pose);
+        SmartDashboard.putData("Field2D", field);
     }
 
     private void startSimThread() {
@@ -364,6 +376,27 @@ public class CommandSwerveDrivetrain extends TunerConstants.TunerSwerveDrivetrai
                     () -> DriverStation.getAlliance().orElse(Alliance.Blue) == Alliance.Red,
                     this // Subsystem for requirements
             );
+            PathPlannerLogging.setLogActivePathCallback((poses) -> {
+            ArrayList<Trajectory.State> states = new ArrayList<>();
+            if (poses.size() > 1) {
+                Pose2d lastPose = poses.get(0);
+                double t = 0;
+                for (var pose : poses.subList(1, poses.size())) {
+                    Pose2d delta = new Pose2d(pose.getTranslation().minus(lastPose.getTranslation()), pose.getRotation().minus(lastPose.getRotation()));
+                    double curvature = delta.getRotation().getRadians() / delta.getTranslation().getNorm();
+                    states.add(new Trajectory.State(t, delta.getX(), delta.getY(), pose, curvature));
+                    t += 0.02;
+                }
+            } else {
+                states.add(new Trajectory.State(
+                        0,
+                        0,
+                        0,
+                        new Pose2d(-100, -100, new Rotation2d()),
+                        0));
+            }
+            field.getObject("Pathplanner Path").setPoses(poses);
+        });
         } catch (Exception ex) {
             DriverStation.reportError("Failed to load PathPlanner config and configure AutoBuilder", ex.getStackTrace());
         }
