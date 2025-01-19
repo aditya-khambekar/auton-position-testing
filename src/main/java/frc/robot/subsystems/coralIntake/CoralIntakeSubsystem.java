@@ -11,14 +11,14 @@ public abstract class CoralIntakeSubsystem extends SubsystemBase {
     private static CoralIntakeSubsystem instance;
 
     public static CoralIntakeSubsystem getInstance() {
-        return Objects.requireNonNullElseGet(instance, ConcreteCoralIntakeSubsystem::new);
+        return instance = Objects.requireNonNullElseGet(instance, ConcreteCoralIntakeSubsystem::new);
     }
 
     protected abstract void setIntakeState(CoralIntakeState intakeState);
 
     public Command setIntakeStateCommand(CoralIntakeState state) {
         return Commands.runOnce(
-                () -> setIntakeState(state)
+            () -> setIntakeState(state)
         );
     }
 
