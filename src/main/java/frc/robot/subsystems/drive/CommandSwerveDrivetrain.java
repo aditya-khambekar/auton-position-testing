@@ -22,6 +22,7 @@ import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.math.numbers.N1;
 import edu.wpi.first.math.numbers.N3;
 import edu.wpi.first.math.trajectory.Trajectory;
+import edu.wpi.first.units.measure.Angle;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.DriverStation.Alliance;
 import edu.wpi.first.wpilibj.smartdashboard.Field2d;
@@ -29,6 +30,7 @@ import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj.Notifier;
 import edu.wpi.first.wpilibj.RobotController;
 import edu.wpi.first.wpilibj2.command.Command;
+import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.Subsystem;
 import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine;
 import frc.robot.commands.AutoRoutines;
@@ -40,6 +42,7 @@ import java.util.ArrayList;
 import java.util.Objects;
 import java.util.function.Supplier;
 
+import static edu.wpi.first.units.Units.Degrees;
 import static edu.wpi.first.units.Units.Second;
 import static edu.wpi.first.units.Units.Volts;
 
@@ -249,8 +252,13 @@ public class CommandSwerveDrivetrain extends TunerConstants.TunerSwerveDrivetrai
 
     public SwerveRequest fieldCentricRequestSupplier() {
         double forwards = Controls.Driver.SwerveForwardAxis.getAsDouble() * DriveConstants.CURRENT_MAX_ROBOT_MPS;
-        double strafe = Controls.Driver.SwerveStrafeAxis.getAsDouble() * DriveConstants.CURRENT_MAX_ROBOT_MPS;
+        double strafe = -Controls.Driver.SwerveStrafeAxis.getAsDouble() * DriveConstants.CURRENT_MAX_ROBOT_MPS;
         double rotation = Controls.Driver.SwerveRotationAxis.getAsDouble() * DriveConstants.CURRENT_MAX_ROBOT_MPS;
+        if (Controls.Driver.precisionTrigger.getAsBoolean()) {
+            forwards /= 4;
+            strafe /= 4;
+            rotation /= 4;
+        }
         return fieldSpeedsRequest.withDesaturateWheelSpeeds(true)
                 .withSpeeds(
                         new ChassisSpeeds(
@@ -373,7 +381,7 @@ public class CommandSwerveDrivetrain extends TunerConstants.TunerSwerveDrivetrai
                     ),
                     config,
                     // Assume the path needs to be flipped for Red vs Blue, this is normally the case
-                    () -> DriverStation.getAlliance().orElse(Alliance.Blue) == Alliance.Red,
+                    () -> false,
                     this // Subsystem for requirements
             );
             PathPlannerLogging.setLogActivePathCallback((poses) -> {
@@ -408,5 +416,18 @@ public class CommandSwerveDrivetrain extends TunerConstants.TunerSwerveDrivetrai
 
     public AutoRoutines getAutoRoutines() {
         return autoRoutines;
+    }
+
+    public Command resetPigeonCommand() {
+        return Commands.runOnce(
+            () -> {
+                getPigeon2().setYaw(
+                    Angle.ofBaseUnits(
+                        0, 
+                        Degrees
+                    )
+                );
+            }
+        );
     }
 }
