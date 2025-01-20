@@ -7,6 +7,8 @@ package frc.robot;
 
 import com.pathplanner.lib.auto.AutoBuilder;
 
+import edu.wpi.first.math.geometry.Pose2d;
+import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.util.sendable.Sendable;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
@@ -15,6 +17,8 @@ import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine.Direction;
 import frc.lib.oi.OI;
 import frc.robot.constants.Controls;
+import frc.robot.subsystems.algaeIntake.AlgaeIntakeSubsystem;
+import frc.robot.subsystems.algaeIntake.ConcreteAlgaeIntakeSubsystem;
 import frc.robot.subsystems.climber.ClimberSubsystem;
 import frc.robot.subsystems.drive.CommandSwerveDrivetrain;
 
@@ -46,6 +50,32 @@ public class RobotContainer {
         swerve.setDefaultCommand(swerve.applyRequest(swerve::fieldCentricRequestSupplier));
         Controls.Driver.rotationResetTrigger.onTrue(
             swerve.resetPigeonCommand()
+        );
+        OI.getInstance().driverController().B_BUTTON.whileTrue(
+            AlgaeIntakeSubsystem.getInstance().intake(() -> 0.7)
+        );
+        OI.getInstance().driverController().X_BUTTON.whileTrue(
+            AlgaeIntakeSubsystem.getInstance().intake(() -> -0.7)
+        );
+
+        OI.getInstance().driverController().Y_BUTTON.whileTrue(
+            AlgaeIntakeSubsystem.getInstance().pivot(() -> -1.0)
+        );
+        OI.getInstance().driverController().A_BUTTON.whileTrue(
+            AlgaeIntakeSubsystem.getInstance().pivot(() -> 1.0)
+        );
+
+        /** Resets Rotation */
+        OI.getInstance().driverController().RIGHT_STICK.whileTrue(
+            swerve.run(() -> 
+                swerve.resetPose(
+                    new Pose2d(
+                        swerve.getState().Pose.getX(), 
+                        swerve.getState().Pose.getY(), 
+                        Rotation2d.fromDegrees(0)
+                    )
+                )
+            )
         );
     }
 

@@ -37,9 +37,10 @@ import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine;
 import frc.lib.network.LimelightHelpers;
 import frc.robot.commands.AutoRoutines;
 import frc.robot.constants.Controls;
-import frc.robot.constants.IDs;
+import frc.robot.constants.FieldConstants;
 import frc.robot.subsystems.drive.constants.DriveConstants;
 import frc.robot.subsystems.drive.constants.TunerConstants;
+import frc.robot.constants.IDs;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -72,8 +73,6 @@ public class CommandSwerveDrivetrain extends TunerConstants.TunerSwerveDrivetrai
     private final PIDController pathThetaController = new PIDController(7, 0, 0);
 
     private final Field2d field = new Field2d();
-
-
 
     private final SwerveRequest.SysIdSwerveTranslation m_translationCharacterization = new SwerveRequest.SysIdSwerveTranslation();
     private final SwerveRequest.SysIdSwerveSteerGains m_steerCharacterization = new SwerveRequest.SysIdSwerveSteerGains();
@@ -163,6 +162,7 @@ public class CommandSwerveDrivetrain extends TunerConstants.TunerSwerveDrivetrai
             0,
             1.1466
         );
+        resetPose(new Pose2d(FieldConstants.startingLineX, FieldConstants.fieldWidth/2, Rotation2d.fromRotations(0)));
     }
 
     /**
@@ -348,13 +348,16 @@ public class CommandSwerveDrivetrain extends TunerConstants.TunerSwerveDrivetrai
         field.setRobotPose(getState().Pose);
         SmartDashboard.putData("Field2D", field);
 
-        if (RobotBase.isReal()) Arrays.stream(IDs.Limelights.values())
+        if (false&&RobotBase.isReal()) Arrays.stream(IDs.Limelights.values())
                 .forEach(
-                        limelight -> addVisionMeasurement(
-                                DriverStation.getAlliance().orElse(Alliance.Blue) == Alliance.Red
-                                        ? LimelightHelpers.getBotPose2d_wpiRed(limelight.getName())
-                                        : LimelightHelpers.getBotPose2d_wpiBlue(limelight.getName())
-                                , Utils.getCurrentTimeSeconds())
+                    limelight -> {
+                        Pose2d poseMeasurement;
+                        if((poseMeasurement = (DriverStation.getAlliance().orElse(Alliance.Blue) == Alliance.Red
+                            ? LimelightHelpers.getBotPose2d_wpiRed(limelight.getName())
+                            : LimelightHelpers.getBotPose2d_wpiBlue(limelight.getName()))) != null) 
+                        addVisionMeasurement(
+                            poseMeasurement, Utils.getCurrentTimeSeconds());
+                    }
                 );
     }
 
