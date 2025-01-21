@@ -26,6 +26,7 @@ import edu.wpi.first.units.measure.Angle;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.DriverStation.Alliance;
 import edu.wpi.first.wpilibj.smartdashboard.Field2d;
+import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj.Notifier;
 import edu.wpi.first.wpilibj.RobotBase;
@@ -67,6 +68,7 @@ public class CommandSwerveDrivetrain extends TunerConstants.TunerSwerveDrivetrai
 
     private boolean hasAppliedOperatorPerspective = false;
 
+    private SendableChooser<Pose2d> m_startPositionChooser = new SendableChooser<>();
 
     private final SwerveRequest.ApplyFieldSpeeds fieldSpeedsRequest = new SwerveRequest.ApplyFieldSpeeds();
     private final SwerveRequest.ApplyRobotSpeeds robotSpeedsRequest = new SwerveRequest.ApplyRobotSpeeds();
@@ -165,7 +167,11 @@ public class CommandSwerveDrivetrain extends TunerConstants.TunerSwerveDrivetrai
             0,
             1.1466
         );
-        resetPose(new Pose2d(FieldConstants.startingLineX, FieldConstants.fieldWidth/2, Rotation2d.fromRotations(0)));
+        m_startPositionChooser.setDefaultOption("DEFAULT", new Pose2d());
+        Arrays.stream(FieldConstants.AutonStartingPositions.values()).forEach(
+            position -> m_startPositionChooser.addOption(position.name(), position.Pose)
+        );
+        SmartDashboard.putData("Selected Reset Position", m_startPositionChooser);
     }
 
     /**
@@ -452,5 +458,9 @@ public class CommandSwerveDrivetrain extends TunerConstants.TunerSwerveDrivetrai
                 );
             }
         );
+    }
+
+    public Pose2d getDashboardSelectedResetPose(){
+        return m_startPositionChooser.getSelected();
     }
 }

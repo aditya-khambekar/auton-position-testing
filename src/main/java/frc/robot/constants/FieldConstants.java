@@ -176,4 +176,24 @@ public class FieldConstants {
      */
     public final double pitch;
   }
+
+  public enum AutonStartingPositions{
+    RIGHT_EDGE(new Pose2d(0 + Units.inchesToMeters(RobotConstants.ROBOT_LENGTH/2), Units.inchesToMeters(49.875 + RobotConstants.ROBOT_WIDTH/2), Rotation2d.kZero)),
+    LEFT_EDGE(new Pose2d(0 + Units.inchesToMeters(RobotConstants.ROBOT_LENGTH/2), Units.inchesToMeters(Units.metersToInches(fieldWidth) - (49.875 + RobotConstants.ROBOT_WIDTH/2)), Rotation2d.kZero));
+
+    AutonStartingPositions(Pose2d pose){
+        this.Pose = pose;
+    }
+    public final Pose2d Pose;
+  }
+
+  public enum AutonTargetPositions{
+    PLACEHOLDER(new Pose2d());
+    //TODO: find the positions of everything
+    
+    AutonTargetPositions(Pose2d pose){
+        this.Pose = pose;
+    }
+    public final Pose2d Pose;
+  }
 }

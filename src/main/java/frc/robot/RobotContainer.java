@@ -65,15 +65,11 @@ public class RobotContainer {
             AlgaeIntakeSubsystem.getInstance().pivot(() -> 1.0)
         );
 
-        /** Resets Rotation */
+        /** Resets Pose to desired pose set by dashboard */
         OI.getInstance().driverController().RIGHT_STICK.whileTrue(
             swerve.run(() -> 
                 swerve.resetPose(
-                    new Pose2d(
-                        swerve.getState().Pose.getX(), 
-                        swerve.getState().Pose.getY(), 
-                        Rotation2d.fromDegrees(0)
-                    )
+                    swerve.getDashboardSelectedResetPose()
                 )
             )
         );
