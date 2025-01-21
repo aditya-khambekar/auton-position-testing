@@ -38,12 +38,14 @@ import frc.lib.network.LimelightHelpers;
 import frc.robot.commands.AutoRoutines;
 import frc.robot.constants.Controls;
 import frc.robot.constants.IDs;
+import frc.robot.constants.IDs.Limelights;
 import frc.robot.subsystems.drive.constants.DriveConstants;
 import frc.robot.subsystems.drive.constants.TunerConstants;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.function.Supplier;
 
 import static edu.wpi.first.units.Units.Degrees;
@@ -348,14 +350,21 @@ public class CommandSwerveDrivetrain extends TunerConstants.TunerSwerveDrivetrai
         field.setRobotPose(getState().Pose);
         SmartDashboard.putData("Field2D", field);
 
-        if (RobotBase.isReal()) Arrays.stream(IDs.Limelights.values())
-                .forEach(
-                        limelight -> addVisionMeasurement(
-                                DriverStation.getAlliance().orElse(Alliance.Blue) == Alliance.Red
-                                        ? LimelightHelpers.getBotPose2d_wpiRed(limelight.getName())
-                                        : LimelightHelpers.getBotPose2d_wpiBlue(limelight.getName())
-                                , Utils.getCurrentTimeSeconds())
+        if (RobotBase.isReal()) Arrays.stream(IDs.Limelights.values()).forEach(
+            limelight -> {
+                Optional<Pose2d> measurement = Optional.of(
+                    DriverStation.getAlliance().orElse(Alliance.Blue) == Alliance.Blue
+                    ? LimelightHelpers.getBotPose2d_wpiBlue(limelight.getName())
+                    : LimelightHelpers.getBotPose2d_wpiRed(limelight.getName())
                 );
+                measurement = measurement.isPresent()
+                                ? (measurement.get().getX() == 0 || measurement.get().getY() == 0
+                                    ? null 
+                                    : measurement)
+                                : null;
+                measurement.ifPresent(pose -> addVisionMeasurement(pose, Utils.getCurrentTimeSeconds()));
+            }
+        );
     }
 
     private void startSimThread() {
