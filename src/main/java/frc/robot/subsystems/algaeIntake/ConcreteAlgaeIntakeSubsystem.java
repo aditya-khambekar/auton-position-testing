@@ -1,5 +1,6 @@
 package frc.robot.subsystems.algaeIntake;
 
+import com.ctre.phoenix6.hardware.TalonFX;
 import com.revrobotics.spark.SparkFlex;
 import com.revrobotics.spark.SparkLowLevel;
 import com.revrobotics.spark.SparkMax;
@@ -28,5 +29,15 @@ public class ConcreteAlgaeIntakeSubsystem extends AlgaeIntakeSubsystem {
     @Override
     protected void setIntakeSpeed(double percent) {
         intakeMotor.set(percent * AlgaeIntakeConstants.INTAKE_SPEED);
+    }
+
+    @Override
+    protected SparkFlex getPivotMotor() {
+        return pivotMotor;
+    }
+
+    @Override
+    protected SparkMax getIntakeMotor() {
+        return intakeMotor;
     }
 }
