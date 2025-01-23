@@ -82,7 +82,7 @@ public class Field extends JPanel implements MouseMotionListener {
             for(Point[] side: generateRotatedSquare(pose.getX(), pose.getY(), 30, pose.getRotation().getDegrees())){
                 var p0 = toGuiCoordinate(MetersToInches(side[0]));
                 var p1 = toGuiCoordinate(MetersToInches(side[1]));
-                System.out.println(p0.toString() + " " + p1.toString());
+                //System.out.println(p0.toString() + " " + p1.toString());
                 //g.drawLine(p0.x, p0.y, p1.x, p1.y);
             }
             Point p = MetersToInches(new Point((int) pose.getX(), (int) pose.getY()));
