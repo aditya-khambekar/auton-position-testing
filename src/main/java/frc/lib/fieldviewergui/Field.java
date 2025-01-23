@@ -4,6 +4,8 @@ import javax.imageio.ImageIO;
 import javax.swing.*;
 
 import edu.wpi.first.math.geometry.Pose2d;
+import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.util.Units;
 import frc.robot.constants.FieldConstants;
 
@@ -13,7 +15,9 @@ import java.awt.event.MouseMotionListener;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.HashSet;
+import java.util.stream.IntStream;
 
 public class Field extends JPanel implements MouseMotionListener {
     private final double imperialWidth = 317; //26 ft 5 inches wide
@@ -44,8 +48,14 @@ public class Field extends JPanel implements MouseMotionListener {
         addMouseMotionListener(this);
         setPreferredSize(new Dimension(943, 448));
 
-        poses.add(FieldConstants.AutonStartingPositions.LEFT_EDGE.Pose);
-        poses.add(FieldConstants.AutonStartingPositions.RIGHT_EDGE.Pose);
+        Arrays.stream(FieldConstants.Reef.centerFaces).forEach(this::addPose);
+        addPose(FieldConstants.Processor.centerFace);
+        addPose(FieldConstants.Reef.center);
+        addPose(FieldConstants.Barge.closeCage);
+        addPose(FieldConstants.Barge.middleCage);
+        addPose(FieldConstants.Barge.farCage);
+        addPose(FieldConstants.CoralStation.leftCenterFace);
+        addPose(FieldConstants.CoralStation.rightCenterFace);
     }
 
     @Override
@@ -79,55 +89,47 @@ public class Field extends JPanel implements MouseMotionListener {
 
         g.setColor(Color.RED);
         for(Pose2d pose:poses){
-            for(Point[] side: generateRotatedSquare(pose.getX(), pose.getY(), 30, pose.getRotation().getDegrees())){
-                var p0 = toGuiCoordinate(MetersToInches(side[0]));
-                var p1 = toGuiCoordinate(MetersToInches(side[1]));
-                //System.out.println(p0.toString() + " " + p1.toString());
-                //g.drawLine(p0.x, p0.y, p1.x, p1.y);
+            var sides = generateRotatedSquare(Units.metersToInches(pose.getX()), Units.metersToInches(pose.getY()), 30, pose.getRotation().getDegrees());
+            for(Point[] side: sides){
+                var p0 = toGuiCoordinate((side[0]));
+                var p1 = toGuiCoordinate((side[1]));
+                g.drawLine(p0.x, p0.y, p1.x, p1.y);
             }
-            Point p = MetersToInches(new Point((int) pose.getX(), (int) pose.getY()));
-            g.drawString("pose", toGuiCoordinate(p).x, toGuiCoordinate(p).y);
+            var forwardLine = sides[1];
+            var backwardLine = sides[3];
+            Point midPoint = toGuiCoordinate(new Point((int)((forwardLine[0].x + forwardLine[1].x))/2,
+                    (int)((forwardLine[0].y + forwardLine[1].y)/2)));
+            Point point1 = toGuiCoordinate(backwardLine[0]);
+            Point point2 = toGuiCoordinate(backwardLine[1]);
+            g.drawLine(point1.x, point1.y, midPoint.x, midPoint.y);
+            g.drawLine(point2.x, point2.y, midPoint.x, midPoint.y);
         }
     }
 
     public static Point[][] generateRotatedSquare(double centerX, double centerY, double sideLength, double rotationAngle) {
-        // Convert rotation angle to radians
         double angleRadians = Math.toRadians(rotationAngle);
 
-        // Calculate coordinates of the four corners of the square
-        double[] xCoords = new double[4];
-        double[] yCoords = new double[4];
+        Point[] corners = new Point[4];
 
-        // Initial coordinates of the square (assuming no rotation)
-        xCoords[0] = centerX - sideLength / 2; 
-        yCoords[0] = centerY - sideLength / 2;
-        xCoords[1] = centerX + sideLength / 2;
-        yCoords[1] = centerY - sideLength / 2;
-        xCoords[2] = centerX + sideLength / 2;
-        yCoords[2] = centerY + sideLength / 2;
-        xCoords[3] = centerX - sideLength / 2;
-        yCoords[3] = centerY + sideLength / 2;
+        corners[0] = new Point((int) (-sideLength/2), (int) (sideLength/2));
+        corners[1] = new Point((int) (sideLength/2), (int) (sideLength/2));
+        corners[2] = new Point((int) (sideLength/2), (int) (-sideLength/2));
+        corners[3] = new Point((int) (-sideLength/2), (int) (-sideLength/2));
 
-        // Rotate the coordinates
-        for (int i = 0; i < 4; i++) {
-            double x = xCoords[i] - centerX;
-            double y = yCoords[i] - centerY;
-            xCoords[i] = centerX + x * Math.cos(angleRadians) - y * Math.sin(angleRadians);
-            yCoords[i] = centerY + x * Math.sin(angleRadians) + y * Math.cos(angleRadians);
-        }
+        double cos = Math.cos(angleRadians);
+        double sin = Math.sin(angleRadians);
 
-        // Create the array of points representing the sides
-        Point[][] sides = new Point[4][2];
-        sides[0][0] = new Point((int)xCoords[0], (int) yCoords[0]);
-        sides[0][1] = new Point((int)xCoords[1], (int) yCoords[1]);
-        sides[1][0] = new Point((int)xCoords[1], (int) yCoords[1]);
-        sides[1][1] = new Point((int)xCoords[2], (int) yCoords[2]);
-        sides[2][0] = new Point((int)xCoords[2], (int) yCoords[2]);
-        sides[2][1] = new Point((int)xCoords[3], (int) yCoords[3]);
-        sides[3][0] = new Point((int)xCoords[3], (int) yCoords[3]);
-        sides[3][1] = new Point((int)xCoords[0], (int) yCoords[0]);
+        IntStream.range(0, 4).forEach(p -> {
+            corners[p] = new Point((int) (corners[p].x * cos - corners[p].y * sin), (int) (corners[p].x * sin + corners[p].y * cos));
+            corners[p] = new Point((int) (corners[p].x + centerX), (int) (corners[p].y + centerY));
+        });
+        var ret = new Point[4][2];
+        ret[0] = new Point[]{corners[0], corners[1]};
+        ret[1] = new Point[]{corners[1], corners[2]};
+        ret[2] = new Point[]{corners[2], corners[3]};
+        ret[3] = new Point[]{corners[3], corners[0]};
 
-        return sides;
+        return ret;
     }
 
     private double getYValue() {
@@ -190,6 +192,14 @@ public class Field extends JPanel implements MouseMotionListener {
         var x = Units.inchesToMeters(p.x);
         var y = Units.inchesToMeters(p.y);
         return new Point((int)x, (int)y);
+    }
+
+    void addPose(Pose2d pose){
+        poses.add(pose);
+    }
+
+    void addPose(Translation2d translation){
+        poses.add(new Pose2d(translation, Rotation2d.kZero));
     }
 }
 
