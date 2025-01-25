@@ -71,6 +71,8 @@ public class RobotContainer {
                 )
             )
         );
+
+        OI.getInstance().driverController().A_BUTTON.whileTrue(swerve.pathFindToNearestTarget(() -> swerve.getClosestTargetPosition().get()));
     }
 
     public Command getAutonomousCommand() {

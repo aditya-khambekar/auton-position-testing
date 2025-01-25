@@ -12,6 +12,7 @@ import com.pathplanner.lib.auto.AutoBuilder;
 import com.pathplanner.lib.config.PIDConstants;
 import com.pathplanner.lib.config.RobotConfig;
 import com.pathplanner.lib.controllers.PPHolonomicDriveController;
+import com.pathplanner.lib.path.PathConstraints;
 import com.pathplanner.lib.util.PathPlannerLogging;
 
 import edu.wpi.first.math.Matrix;
@@ -463,4 +464,43 @@ public class CommandSwerveDrivetrain extends TunerConstants.TunerSwerveDrivetrai
     public Pose2d getDashboardSelectedResetPose(){
         return m_startPositionChooser.getSelected();
     }
+
+    public Command pathfindCommand(Pose2d targetPose) {
+        PathConstraints constraints = new PathConstraints(
+            6, 3,
+            2 * Math.PI, 2 * Math.PI
+        );
+        return AutoBuilder.pathfindToPoseFlipped(
+            targetPose,
+            constraints
+        );
+    }
+
+    public Optional<Pose2d> getClosestTargetPosition(){
+        return (Arrays.stream(FieldConstants.TargetPositions.values()).map(pos -> pos.Pose).reduce(this::minimumDistancefromRobotPose));
+    }
+
+    Pose2d minimumDistancefromRobotPose(Pose2d a, Pose2d b){
+        Pose2d pose = getState().Pose;
+        var dist1 = pose.getTranslation().getDistance(a.getTranslation());
+        var dist2 = pose.getTranslation().getDistance(b.getTranslation());
+        return Math.min(dist1, dist2) == dist1
+            ? a
+            : b;
+    }
+
+    public Command pathFindToNearestTarget(Supplier<Pose2d> targetPoseSupplier){
+        PathConstraints constraints = new PathConstraints(
+            6, 3,
+            2 * Math.PI, 2 * Math.PI
+        );
+
+        return run(() -> 
+            AutoBuilder.pathfindToPoseFlipped(
+                targetPoseSupplier.get(),
+                constraints
+                ).execute()
+        );
+    }
+
 }

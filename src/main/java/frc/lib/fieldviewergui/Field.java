@@ -2,14 +2,21 @@ package frc.lib.fieldviewergui;
 
 import javax.imageio.ImageIO;
 import javax.swing.*;
+import java.util.Timer;
+import java.util.TimerTask;
 
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.util.Units;
+import edu.wpi.first.wpilibj.RobotBase;
+import edu.wpi.first.wpilibj2.command.Command;
 import frc.robot.constants.FieldConstants;
+import frc.robot.subsystems.drive.CommandSwerveDrivetrain;
 
 import java.awt.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseMotionListener;
 import java.awt.image.BufferedImage;
@@ -17,9 +24,10 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.Optional;
 import java.util.stream.IntStream;
 
-public class Field extends JPanel implements MouseMotionListener {
+public class Field extends JPanel implements MouseMotionListener{
     private final double imperialWidth = 317; //26 ft 5 inches wide
     private final double imperialLength = 690.875;// 57 fft 6 7/8in wide
     private final double inchesToMeters = 0.0254;
@@ -34,7 +42,6 @@ public class Field extends JPanel implements MouseMotionListener {
     double fieldMaximumY = (1 - 0.14634888438) * getHeight();
 
     HashSet<Pose2d> poses = new HashSet<>();
-
     private static BufferedImage getFieldImage() {
         try {
             return ImageIO.read(new File("src\\main\\java\\frc\\lib\\fieldviewergui\\2025 REEFSCAPE Transparent Background.png"));
@@ -48,14 +55,16 @@ public class Field extends JPanel implements MouseMotionListener {
         addMouseMotionListener(this);
         setPreferredSize(new Dimension(943, 448));
 
-        Arrays.stream(FieldConstants.Reef.centerFaces).forEach(this::addPose);
-        addPose(FieldConstants.Processor.centerFace);
-        addPose(FieldConstants.Reef.center);
-        addPose(FieldConstants.Barge.closeCage);
-        addPose(FieldConstants.Barge.middleCage);
-        addPose(FieldConstants.Barge.farCage);
-        addPose(FieldConstants.CoralStation.leftCenterFace);
-        addPose(FieldConstants.CoralStation.rightCenterFace);
+        Arrays.stream(FieldConstants.TargetPositions.values()).map(pos -> pos.Pose).forEach(this::addPose);
+        new Timer().scheduleAtFixedRate(
+            new TimerTask() {
+                @Override
+                public void run(){
+                    Field.this.repaint();
+                }
+            }
+            , 0, 10);
+        
     }
 
     @Override
@@ -104,6 +113,34 @@ public class Field extends JPanel implements MouseMotionListener {
             g.drawLine(point1.x, point1.y, midPoint.x, midPoint.y);
             g.drawLine(point2.x, point2.y, midPoint.x, midPoint.y);
         }
+
+        if(RobotBase.isSimulation()){
+            Pose2d pose = CommandSwerveDrivetrain.getInstance().getState().Pose;
+            g.setColor(Color.MAGENTA);
+            var sides = generateRotatedSquare(Units.metersToInches(pose.getX()), Units.metersToInches(pose.getY()), 30, pose.getRotation().getDegrees());
+            for(Point[] side: sides){
+                var p0 = toGuiCoordinate((side[0]));
+                var p1 = toGuiCoordinate((side[1]));
+                g.drawLine(p0.x, p0.y, p1.x, p1.y);
+            }
+            var forwardLine = sides[1];
+            var backwardLine = sides[3];
+            Point midPoint = toGuiCoordinate(new Point((int)((forwardLine[0].x + forwardLine[1].x))/2,
+                    (int)((forwardLine[0].y + forwardLine[1].y)/2)));
+            Point point1 = toGuiCoordinate(backwardLine[0]);
+            Point point2 = toGuiCoordinate(backwardLine[1]);
+            g.drawLine(point1.x, point1.y, midPoint.x, midPoint.y);
+            g.drawLine(point2.x, point2.y, midPoint.x, midPoint.y);
+        }
+        getClosestTargetPosition().ifPresent(
+            pos -> {
+                //System.out.println(pos.toString());
+                Pose2d robotPose = CommandSwerveDrivetrain.getInstance().getState().Pose;
+                var guiPoint = toGuiCoordinate(new Point((int)Units.metersToInches(pos.getX()), (int)Units.metersToInches(pos.getY())));
+                var guiBotPoint = toGuiCoordinate(new Point((int)Units.metersToInches(robotPose.getX()), (int)Units.metersToInches(robotPose.getY())));
+                g.drawLine(guiPoint.x, guiPoint.y, guiBotPoint.x, guiBotPoint.y);
+            }   
+        );
     }
 
     public static Point[][] generateRotatedSquare(double centerX, double centerY, double sideLength, double rotationAngle) {
@@ -201,5 +238,17 @@ public class Field extends JPanel implements MouseMotionListener {
     void addPose(Translation2d translation){
         poses.add(new Pose2d(translation, Rotation2d.kZero));
     }
-}
 
+    Optional<Pose2d> getClosestTargetPosition(){
+        return (Arrays.stream(FieldConstants.TargetPositions.values()).map(pos -> pos.Pose).reduce(this::minimumDistancefromRobotPose));
+    }
+
+    Pose2d minimumDistancefromRobotPose(Pose2d a, Pose2d b){
+        Pose2d pose = CommandSwerveDrivetrain.getInstance().getState().Pose;
+        var dist1 = pose.getTranslation().getDistance(a.getTranslation());
+        var dist2 = pose.getTranslation().getDistance(b.getTranslation());
+        return Math.min(dist1, dist2) == dist1
+            ? a
+            : b;
+    }
+}

@@ -9,6 +9,8 @@ package frc.robot.constants;
 
 import edu.wpi.first.math.geometry.*;
 import edu.wpi.first.math.util.Units;
+
+import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -163,11 +165,29 @@ public class FieldConstants {
     public final Pose2d Pose;
   }
 
-  public enum AutonTargetPositions{
-    PLACEHOLDER(new Pose2d());
-    //TODO: find the positions of everything
+  static Transform2d fromReef = new Transform2d(Units.inchesToMeters(25), 0, Rotation2d.k180deg);
+  static Transform2d fromProcessor = new Transform2d(Units.inchesToMeters(25), 0, Rotation2d.k180deg);
+  static Transform2d fromCoralStation = new Transform2d(Units.inchesToMeters(25), 0, Rotation2d.k180deg);
+  static Transform2d fromBarge = new Transform2d(Units.inchesToMeters(-15), 0, Rotation2d.kZero);
+
+  public enum TargetPositions{
+    REEF_0(FieldConstants.Reef.centerFaces[0].transformBy((FieldConstants.fromReef))),
+    REEF_1(FieldConstants.Reef.centerFaces[1].transformBy((FieldConstants.fromReef))),
+    REEF_2(FieldConstants.Reef.centerFaces[2].transformBy((FieldConstants.fromReef))),
+    REEF_3(FieldConstants.Reef.centerFaces[3].transformBy((FieldConstants.fromReef))),
+    REEF_4(FieldConstants.Reef.centerFaces[4].transformBy((FieldConstants.fromReef))),
+    REEF_5(FieldConstants.Reef.centerFaces[5].transformBy((FieldConstants.fromReef))),
+
+    PROCESSOR(FieldConstants.Processor.centerFace.transformBy(FieldConstants.fromProcessor)),
+
+    CORALSTATION_LEFT(FieldConstants.CoralStation.leftCenterFace.transformBy(FieldConstants.fromCoralStation)),
+    CORALSTATION_RIGHT(FieldConstants.CoralStation.rightCenterFace.transformBy(FieldConstants.fromCoralStation)),
+
+    BARGE_FARCAGE(new Pose2d(FieldConstants.Barge.farCage, Rotation2d.kZero).transformBy(fromBarge)),
+    BARGE_MIDDLECAGE(new Pose2d(FieldConstants.Barge.middleCage, Rotation2d.kZero).transformBy(fromBarge)),
+    BARGE_CLOSECAGE(new Pose2d(FieldConstants.Barge.closeCage, Rotation2d.kZero).transformBy(fromBarge));
     
-    AutonTargetPositions(Pose2d pose){
+    TargetPositions(Pose2d pose){
         this.Pose = pose;
     }
     public final Pose2d Pose;
